@@ -4,6 +4,7 @@ mod git;
 mod hash;
 mod parser;
 mod processor;
+mod transform;
 
 use anyhow::{Context, Result};
 use cli::Cli;
@@ -100,6 +101,7 @@ fn main() -> Result<()> {
         commits,
         &args.primary_key,
         file_format,
+        args.transform.as_deref(),
         args.verbose,
     )?;
 

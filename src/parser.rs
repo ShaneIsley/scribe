@@ -30,9 +30,25 @@ pub fn parse_file(
     content: &[u8],
     format: FileFormat,
 ) -> Result<Vec<BTreeMap<String, Value>>> {
-    match format {
-        FileFormat::Json => parse_json(content),
-        FileFormat::Csv => parse_csv(content),
+    parse_file_with_transform(content, format, None)
+}
+
+/// Parse file contents and optionally apply JMESPath transformation
+pub fn parse_file_with_transform(
+    content: &[u8],
+    format: FileFormat,
+    transform: Option<&str>,
+) -> Result<Vec<BTreeMap<String, Value>>> {
+    let items = match format {
+        FileFormat::Json => parse_json(content)?,
+        FileFormat::Csv => parse_csv(content)?,
+    };
+
+    // Apply transformation if provided
+    if let Some(expr) = transform {
+        crate::transform::apply_transform(items, expr)
+    } else {
+        Ok(items)
     }
 }
 

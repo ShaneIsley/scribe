@@ -31,6 +31,10 @@ pub struct Cli {
     /// Verbosity level (-v, -vv, -vvv)
     #[arg(short = 'v', long = "verbose", action = clap::ArgAction::Count)]
     pub verbose: u8,
+
+    /// JMESPath expression to transform data (optional)
+    #[arg(short = 't', long = "transform")]
+    pub transform: Option<String>,
 }
 
 impl Cli {

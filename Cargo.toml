@@ -6,6 +6,14 @@ authors = ["Scribe Contributors"]
 description = "A high-performance Git history database extractor"
 license = "MIT OR Apache-2.0"
 
+[lib]
+name = "scribe"
+path = "src/lib.rs"
+
+[[bin]]
+name = "scribe"
+path = "src/main.rs"
+
 [dependencies]
 # Git operations
 gix = "0.66"
@@ -32,3 +40,6 @@ chrono = "0.4"
 
 # Hashing
 sha2 = "0.10"
+
+# Transformations
+jmespath = "0.3"

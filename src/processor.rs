@@ -5,7 +5,7 @@ use std::collections::{BTreeMap, HashMap};
 use crate::db::Database;
 use crate::git::CommitInfo;
 use crate::hash::{compute_content_hash, compute_primary_key_hash};
-use crate::parser::{extract_columns, parse_file, FileFormat};
+use crate::parser::{extract_columns, parse_file_with_transform, FileFormat};
 
 /// Processed data from a single commit
 #[derive(Debug)]
@@ -29,6 +29,7 @@ pub fn process_history(
     commits: Vec<CommitInfo>,
     primary_keys: &[String],
     file_format: FileFormat,
+    transform: Option<&str>,
     verbose: u8,
 ) -> Result<()> {
     if commits.is_empty() {
@@ -51,7 +52,7 @@ pub fn process_history(
         .par_iter()
         .map(|commit| {
             // Parse the blob content
-            let items = parse_file(&commit.blob_content, file_format)
+            let items = parse_file_with_transform(&commit.blob_content, file_format, transform)
                 .with_context(|| {
                     format!(
                         "Failed to parse file content in commit {}",
