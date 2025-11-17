@@ -20,6 +20,7 @@ gix = "0.66"
 
 # Database
 rusqlite = { version = "0.32", features = ["bundled", "chrono"] }
+duckdb = { version = "1.4", features = ["bundled", "chrono"] }
 
 # Parallelism
 rayon = "1.10"
