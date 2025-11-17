@@ -1,7 +1,8 @@
 [
   {"id": 1, "name": "Alice", "age": 31, "city": "New York"},
   {"id": 2, "name": "Bob", "age": 26, "city": "Los Angeles"},
-  {"id": 3, "name": "Charlie", "age": 35, "city": "Boston"},
+  {"id": 3, "name": "Charlie", "age": 36, "city": "Austin"},
   {"id": 4, "name": "Diana", "age": 29, "city": "Chicago"},
-  {"id": 5, "name": "Eve", "age": 27, "city": "Seattle"}
+  {"id": 5, "name": "Eve", "age": 27, "city": "Seattle"},
+  {"id": 6, "name": "Frank", "age": 32, "city": "Denver"}
 ]
