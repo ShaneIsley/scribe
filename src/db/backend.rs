@@ -6,7 +6,7 @@ use std::path::Path;
 
 /// Database backend abstraction trait
 /// Allows switching between SQLite and DuckDB while maintaining the same interface
-pub trait DatabaseBackend: Send + Sync {
+pub trait DatabaseBackend: Send {
     /// Initialize the database schema with the given columns
     fn init_schema(&self, columns: &[String]) -> Result<()>;
 
@@ -176,7 +176,7 @@ pub mod tests {
         let temp_file = NamedTempFile::new().unwrap();
         let db_path = temp_file.path();
 
-        let mut backend = create_backend(db_path).unwrap();
+        let backend = create_backend(db_path).unwrap();
         let columns = vec!["id".to_string(), "name".to_string(), "age".to_string()];
         backend.init_schema(&columns).unwrap();
 
