@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scribe — Interactive Walkthrough</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1c2128;
+  --blue: #58a6ff;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --purple: #bc8cff;
+  --red: #f85149;
+  --muted: #8b949e;
+  --text: #e6edf3;
+  --border: #30363d;
+  --mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.6; }
+
+/* NAV */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(13,17,23,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 24px; height: 56px;
+}
+.nav-logo { font-weight: 700; font-size: 1.1rem; color: var(--blue); margin-right: 16px; text-decoration: none; white-space: nowrap; }
+.nav-links { display: flex; gap: 4px; flex-wrap: wrap; }
+.nav-links a {
+  color: var(--muted); text-decoration: none; font-size: 0.82rem;
+  padding: 4px 10px; border-radius: 6px; transition: background 0.2s, color 0.2s;
+}
+.nav-links a:hover { background: var(--surface2); color: var(--text); }
+
+/* HERO */
+.hero {
+  position: relative; overflow: hidden;
+  padding: 80px 24px 64px;
+  text-align: center;
+  background: linear-gradient(135deg, #0d1117 0%, #0d1520 50%, #0d1117 100%);
+}
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 30% 50%, rgba(88,166,255,0.08) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 30%, rgba(188,140,255,0.07) 0%, transparent 60%);
+  animation: heroShift 8s ease-in-out infinite alternate;
+}
+@keyframes heroShift {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+.hero h1 {
+  position: relative;
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  font-weight: 800; letter-spacing: -1px;
+  background: linear-gradient(90deg, var(--blue), var(--purple));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; margin-bottom: 16px;
+}
+.hero p { position: relative; color: var(--muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto 24px; }
+.hero-tags { position: relative; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.tag {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted); font-size: 0.8rem; font-family: var(--mono);
+  padding: 4px 12px; border-radius: 999px;
+}
+
+/* SECTIONS */
+section {
+  max-width: 1100px; margin: 0 auto;
+  padding: 56px 24px;
+  border-top: 1px solid var(--border);
+}
+.chip {
+  display: inline-block; background: rgba(88,166,255,0.12);
+  border: 1px solid rgba(88,166,255,0.35); color: var(--blue);
+  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em;
+  padding: 3px 10px; border-radius: 999px; margin-bottom: 12px; text-transform: uppercase;
+}
+section h2 { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; margin-bottom: 10px; }
+section > p { color: var(--muted); max-width: 760px; margin-bottom: 28px; font-size: 0.97rem; }
+
+/* CONTROLS CARD */
+.controls {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 20px 24px;
+  display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end;
+  margin-bottom: 28px;
+}
+.control-group { display: flex; flex-direction: column; gap: 6px; min-width: 160px; }
+.control-group label { font-size: 0.78rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.control-group span { font-size: 0.82rem; color: var(--blue); font-family: var(--mono); }
+input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 4px;
+  background: var(--border); border-radius: 2px; outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px;
+  background: var(--blue); border-radius: 50%; cursor: pointer;
+  box-shadow: 0 0 6px rgba(88,166,255,0.5);
+}
+select {
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  padding: 6px 10px; border-radius: 6px; font-size: 0.88rem; outline: none; cursor: pointer;
+}
+.btn-group { display: flex; gap: 8px; align-items: center; }
+.btn {
+  font-size: 0.88rem; font-weight: 600; cursor: pointer;
+  padding: 7px 18px; border-radius: 999px;
+  border: 1.5px solid var(--blue); background: rgba(88,166,255,0.1);
+  color: var(--blue); transition: background 0.2s, color 0.2s;
+}
+.btn:hover { background: var(--blue); color: #0d1117; }
+.btn-reset { border-color: var(--border); background: transparent; color: var(--muted); }
+.btn-reset:hover { background: var(--surface2); color: var(--text); border-color: var(--muted); }
+
+/* VIZ BOX */
+.viz-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 24px; overflow-x: auto;
+}
+
+/* ========== SECTION 1: PIPELINE ========== */
+.pipeline-stages {
+  display: flex; flex-wrap: wrap; gap: 0; align-items: center; justify-content: center;
+}
+.stage-wrapper { display: flex; align-items: center; }
+.stage {
+  width: 90px; min-height: 64px; padding: 10px 6px;
+  border: 2px solid var(--border); border-radius: 10px;
+  background: var(--surface2); text-align: center;
+  cursor: default; transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.stage .emoji { font-size: 1.4rem; line-height: 1; }
+.stage .stage-label { font-size: 0.68rem; color: var(--muted); font-weight: 600; line-height: 1.2; }
+.stage.active {
+  border-color: var(--blue);
+  box-shadow: 0 0 16px rgba(88,166,255,0.4);
+  background: rgba(88,166,255,0.08);
+}
+.stage.active .stage-label { color: var(--blue); }
+.stage.done {
+  border-color: var(--green);
+  box-shadow: 0 0 8px rgba(63,185,80,0.3);
+  background: rgba(63,185,80,0.07);
+}
+.stage.done .stage-label { color: var(--green); }
+.arrow {
+  width: 28px; height: 2px; background: var(--border); position: relative;
+  flex-shrink: 0; transition: background 0.3s;
+}
+.arrow::after {
+  content: ''; position: absolute; right: -1px; top: -4px;
+  border: 5px solid transparent; border-left: 7px solid var(--border);
+  transition: border-left-color 0.3s;
+}
+.arrow.lit { background: var(--blue); }
+.arrow.lit::after { border-left-color: var(--blue); }
+#pipeline-status {
+  margin-top: 20px; min-height: 40px; text-align: center;
+  color: var(--muted); font-size: 0.88rem; font-family: var(--mono);
+  background: var(--surface2); border-radius: 8px; padding: 10px 16px;
+  transition: color 0.3s;
+}
+
+/* ========== SECTION 2: INCREMENTAL ========== */
+.commits-track {
+  display: flex; align-items: center; gap: 0;
+  flex-wrap: wrap; padding: 12px 0;
+  position: relative; min-height: 80px;
+}
+.commit-wrapper { display: flex; align-items: center; position: relative; }
+.commit-line { width: 20px; height: 2px; background: var(--border); flex-shrink: 0; }
+.commit-circle {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 2px solid var(--border); background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.65rem; font-weight: 700; color: var(--muted);
+  flex-shrink: 0; transition: all 0.4s; position: relative; cursor: default;
+}
+.commit-circle.skipped { opacity: 0.28; }
+.commit-circle.pending { border-color: var(--muted); color: var(--muted); }
+.commit-circle.processing {
+  border-color: var(--blue); color: var(--blue);
+  box-shadow: 0 0 14px rgba(88,166,255,0.6);
+  animation: pulse 0.7s ease-in-out infinite alternate;
+}
+.commit-circle.processed { border-color: var(--green); color: var(--green); background: rgba(63,185,80,0.1); }
+@keyframes pulse { from { box-shadow: 0 0 6px rgba(88,166,255,0.4); } to { box-shadow: 0 0 20px rgba(88,166,255,0.8); } }
+
+.resume-marker {
+  position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+  font-size: 0.6rem; color: var(--yellow); white-space: nowrap; font-weight: 700;
+  pointer-events: none;
+}
+.resume-line {
+  position: absolute; top: -6px; bottom: -6px; left: 50%;
+  width: 2px; background: var(--yellow); transform: translateX(-50%);
+}
+
+.stats-row {
+  display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px;
+}
+.stat-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 16px; flex: 1; min-width: 100px;
+  text-align: center;
+}
+.stat-card .stat-val { font-size: 1.4rem; font-weight: 700; font-family: var(--mono); color: var(--blue); }
+.stat-card .stat-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+
+/* ========== SECTION 3: PARALLEL ========== */
+.worker-lanes { display: flex; flex-direction: column; gap: 10px; }
+.worker-lane {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px; min-height: 52px;
+}
+.worker-label { font-size: 0.75rem; color: var(--muted); font-weight: 600; width: 70px; flex-shrink: 0; font-family: var(--mono); }
+.lane-blobs { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; align-items: center; }
+.blob {
+  width: 44px; height: 34px; border-radius: 6px; position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.68rem; font-weight: 700; color: #0d1117;
+  transition: opacity 0.5s;
+}
+.blob-label { position: relative; z-index: 2; }
+.blob-progress {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 0%;
+  background: rgba(0,0,0,0.25); transition: none;
+}
+.blob.done { opacity: 0.45; }
+
+.parallel-stats {
+  display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px;
+}
+.p-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 20px; }
+.p-stat .val { font-size: 1.3rem; font-weight: 700; font-family: var(--mono); color: var(--blue); }
+.p-stat .lbl { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
+
+/* ========== SECTION 4: HASHING ========== */
+.hash-table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+th {
+  background: var(--surface2); color: var(--muted); font-size: 0.72rem;
+  text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;
+  padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left;
+}
+td { padding: 8px 10px; border-bottom: 1px solid rgba(48,54,61,0.5); vertical-align: middle; }
+.hash-pk { color: var(--purple); font-family: var(--mono); font-size: 0.78rem; }
+.hash-content { color: var(--yellow); font-family: var(--mono); font-size: 0.78rem; }
+.status-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700;
+}
+.badge-new { background: rgba(63,185,80,0.18); color: var(--green); border: 1px solid rgba(63,185,80,0.4); }
+.badge-changed { background: rgba(210,153,34,0.18); color: var(--yellow); border: 1px solid rgba(210,153,34,0.4); }
+.badge-same { background: rgba(139,148,158,0.15); color: var(--muted); border: 1px solid rgba(139,148,158,0.3); }
+tr.row-new { background: rgba(63,185,80,0.06); }
+tr.row-changed { background: rgba(210,153,34,0.06); }
+tr.row-same { background: transparent; }
+
+.hash-explain {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 14px 18px; margin-top: 16px; font-family: var(--mono); font-size: 0.8rem;
+}
+.hash-explain .explain-label { color: var(--muted); margin-bottom: 6px; font-size: 0.73rem; text-transform: uppercase; font-family: var(--sans); }
+.hash-explain code { color: var(--blue); background: rgba(88,166,255,0.08); padding: 1px 6px; border-radius: 4px; }
+
+/* ========== SECTION 5: DATABASE ========== */
+.db-panels { display: flex; gap: 16px; flex-wrap: wrap; }
+.db-panel { flex: 1; min-width: 280px; }
+.db-panel-title { font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.db-panel-title span { color: var(--blue); font-family: var(--mono); }
+.db-table-wrap { overflow-x: auto; }
+.db-table-wrap.scrollable tbody { display: block; max-height: 380px; overflow-y: auto; }
+.db-table-wrap.scrollable thead, .db-table-wrap.scrollable tbody tr { display: table; width: 100%; table-layout: fixed; }
+
+.db-stats {
+  display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+}
+.db-stat {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 16px; flex: 1; min-width: 110px; text-align: center;
+}
+.db-stat .val { font-size: 1.2rem; font-weight: 700; font-family: var(--mono); color: var(--blue); }
+.db-stat .lbl { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+@keyframes fadeInGreen { from { background: rgba(63,185,80,0.35); } to { background: rgba(63,185,80,0.06); } }
+@keyframes flashYellow { 0%,100% { background: transparent; } 40% { background: rgba(210,153,34,0.35); } }
+@keyframes slideInLeft { from { transform: translateX(-30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.anim-new-item { animation: fadeInGreen 1.2s ease forwards; }
+.anim-changed-item { animation: flashYellow 1s ease forwards; }
+.anim-version-row { animation: slideInLeft 0.5s ease forwards; background: rgba(63,185,80,0.08); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="#">⚡ Scribe</a>
+  <div class="nav-links">
+    <a href="#pipeline">Pipeline</a>
+    <a href="#incremental">Incremental</a>
+    <a href="#parallel">Parallel</a>
+    <a href="#hashing">Hashing</a>
+    <a href="#database">Database</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>How Scribe Works</h1>
+  <p>An interactive walkthrough of Scribe — a Rust CLI that converts Git commit history of JSON/CSV files into a versioned SQLite database.</p>
+  <div class="hero-tags">
+    <span class="tag">Rust</span>
+    <span class="tag">Gitoxide</span>
+    <span class="tag">SQLite</span>
+    <span class="tag">Rayon</span>
+  </div>
+</div>
+
+<!-- ===== SECTION 1: PIPELINE ===== -->
+<section id="pipeline">
+  <div class="chip">Overview</div>
+  <h2>The Processing Pipeline</h2>
+  <p>Scribe's <code style="color:var(--blue);font-family:var(--mono)">main()</code> coordinates 8 steps. Watch data flow left-to-right through each module.</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>Animation Speed</label>
+      <input type="range" id="p1-speed" min="1" max="3" value="2" step="1">
+      <span id="p1-speed-label">Normal</span>
+    </div>
+    <div class="btn-group">
+      <button class="btn" id="p1-play">▶ Play</button>
+      <button class="btn btn-reset" id="p1-reset">↺ Reset</button>
+    </div>
+  </div>
+
+  <div class="viz-box">
+    <div class="pipeline-stages" id="pipeline-stages"></div>
+    <div id="pipeline-status">Click ▶ Play to watch data flow through the pipeline.</div>
+  </div>
+</section>
+
+<!-- ===== SECTION 2: INCREMENTAL ===== -->
+<section id="incremental">
+  <div class="chip">Strategy 1</div>
+  <h2>Incremental Processing</h2>
+  <p>On re-runs, Scribe reads <code style="color:var(--blue);font-family:var(--mono)">last_processed_commit</code> from <code style="color:var(--blue);font-family:var(--mono)">_scribe_meta</code> and skips already-seen commits. The resume-from slider shows how much history can be skipped.</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>Total Commits</label>
+      <input type="range" id="i-total" min="5" max="20" value="12" step="1">
+      <span id="i-total-label">12</span>
+    </div>
+    <div class="control-group">
+      <label>Already Processed</label>
+      <input type="range" id="i-resume" min="0" max="11" value="0" step="1">
+      <span id="i-resume-label">0 (fresh run)</span>
+    </div>
+    <div class="control-group">
+      <label>Playback Speed</label>
+      <input type="range" id="i-speed" min="1" max="3" value="2" step="1">
+      <span id="i-speed-label">Normal</span>
+    </div>
+    <div class="btn-group">
+      <button class="btn" id="i-play">▶ Play</button>
+      <button class="btn btn-reset" id="i-reset">↺ Reset</button>
+    </div>
+  </div>
+
+  <div class="viz-box">
+    <div class="commits-track" id="commits-track"></div>
+    <div class="stats-row" id="i-stats">
+      <div class="stat-card"><div class="stat-val" id="i-stat-total">12</div><div class="stat-label">Total Commits</div></div>
+      <div class="stat-card"><div class="stat-val" id="i-stat-skipped">0</div><div class="stat-label">Skipped</div></div>
+      <div class="stat-card"><div class="stat-val" id="i-stat-toprocess">12</div><div class="stat-label">To Process</div></div>
+      <div class="stat-card"><div class="stat-val" id="i-stat-timesaved">0%</div><div class="stat-label">Time Saved</div></div>
+      <div class="stat-card"><div class="stat-val" id="i-stat-done">0</div><div class="stat-label">Processed This Run</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 3: PARALLEL ===== -->
+<section id="parallel">
+  <div class="chip">Strategy 2</div>
+  <h2>Parallel Parsing with Rayon</h2>
+  <p>Parsing JSON/CSV blobs is CPU-bound and embarrassingly parallel. <code style="color:var(--blue);font-family:var(--mono)">par_iter()</code> distributes work across all cores. More workers = faster total time.</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>Commits to Parse</label>
+      <input type="range" id="par-blobs" min="4" max="16" value="8" step="1">
+      <span id="par-blobs-label">8</span>
+    </div>
+    <div class="control-group">
+      <label>Rayon Workers</label>
+      <input type="range" id="par-workers" min="1" max="8" value="1" step="1">
+      <span id="par-workers-label">1 (sequential)</span>
+    </div>
+    <div class="control-group">
+      <label>Parse Time / Blob</label>
+      <input type="range" id="par-speed" min="1" max="5" value="3" step="1">
+      <span id="par-speed-label">Normal</span>
+    </div>
+    <div class="btn-group">
+      <button class="btn" id="par-run">▶ Run</button>
+      <button class="btn btn-reset" id="par-reset">↺ Reset</button>
+    </div>
+  </div>
+
+  <div class="viz-box">
+    <div class="worker-lanes" id="worker-lanes"></div>
+    <div class="parallel-stats">
+      <div class="p-stat"><div class="val" id="par-stat-wall">—</div><div class="lbl">Wall Time (s)</div></div>
+      <div class="p-stat"><div class="val" id="par-stat-speedup">—</div><div class="lbl">Speedup vs Sequential</div></div>
+      <div class="p-stat"><div class="val" id="par-stat-parsed">0</div><div class="lbl">Blobs Parsed</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 4: HASHING ===== -->
+<section id="hashing">
+  <div class="chip">Strategy 3</div>
+  <h2>Hash-Based Change Detection</h2>
+  <p>Two SHA-256 hashes per row: a primary key hash (stable identity, never changes) and a content hash (changes whenever any field changes). Scribe compares content hashes to decide what to write — no DB read needed.</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>Commit</label>
+      <input type="range" id="h-commit" min="1" max="5" value="1" step="1">
+      <span id="h-commit-label">Commit 1 (initial)</span>
+    </div>
+    <div class="control-group">
+      <label>Primary Key Column</label>
+      <select id="h-pk">
+        <option value="id">id</option>
+        <option value="name">name</option>
+        <option value="city">city</option>
+      </select>
+    </div>
+    <div class="btn-group">
+      <button class="btn" id="h-animate">▶ Animate</button>
+    </div>
+  </div>
+
+  <div class="viz-box">
+    <div class="hash-table-wrap">
+      <table id="hash-table">
+        <thead>
+          <tr>
+            <th>id</th><th>name</th><th>age</th><th>city</th>
+            <th class="hash-pk">PK Hash</th>
+            <th class="hash-content">Content Hash</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="hash-tbody"></tbody>
+      </table>
+    </div>
+    <div class="hash-explain" id="hash-explain">
+      <div class="explain-label">Hash Inputs (first row)</div>
+      <div id="hash-explain-pk"></div>
+      <div id="hash-explain-content" style="margin-top:6px;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 5: DATABASE ===== -->
+<section id="database">
+  <div class="chip">Strategy 4</div>
+  <h2>Transactional Version History</h2>
+  <p><code style="color:var(--blue);font-family:var(--mono)">items</code> holds current state; <code style="color:var(--blue);font-family:var(--mono)">item_versions</code> is the append-only log. Each atomic transaction also updates <code style="color:var(--blue);font-family:var(--mono)">last_processed_commit</code> — a crash mid-run leaves the DB consistent and resumable.</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>Commit</label>
+      <input type="range" id="db-commit" min="0" max="5" value="0" step="1">
+      <span id="db-commit-label">Start (0 commits)</span>
+    </div>
+    <div class="control-group">
+      <label>Animation Speed</label>
+      <input type="range" id="db-speed" min="1" max="3" value="2" step="1">
+      <span id="db-speed-label">Normal</span>
+    </div>
+    <div class="btn-group">
+      <button class="btn" id="db-play">▶ Play</button>
+      <button class="btn btn-reset" id="db-reset">↺ Reset</button>
+    </div>
+  </div>
+
+  <div class="viz-box">
+    <div class="db-stats">
+      <div class="db-stat"><div class="val" id="db-stat-commits">0</div><div class="lbl">Commits Processed</div></div>
+      <div class="db-stat"><div class="val" id="db-stat-items">0</div><div class="lbl">Unique Items</div></div>
+      <div class="db-stat"><div class="val" id="db-stat-versions">0</div><div class="lbl">Version Records</div></div>
+      <div class="db-stat"><div class="val" id="db-stat-lpc" style="font-size:0.9rem;">—</div><div class="lbl">last_processed_commit</div></div>
+    </div>
+    <div class="db-panels">
+      <div class="db-panel">
+        <div class="db-panel-title">items <span>(current state)</span></div>
+        <div class="db-table-wrap">
+          <table id="items-table">
+            <thead><tr><th class="hash-pk">_item_pk</th><th style="color:var(--blue);font-family:var(--mono)">_last_commit</th><th>name</th><th>age</th><th>city</th></tr></thead>
+            <tbody id="items-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="db-panel">
+        <div class="db-panel-title">item_versions <span>(append-only log)</span></div>
+        <div class="db-table-wrap scrollable">
+          <table id="versions-table">
+            <thead><tr><th>#</th><th class="hash-pk">_item_pk</th><th style="color:var(--blue);font-family:var(--mono)">_commit</th><th>name</th><th>age</th><th>city</th></tr></thead>
+            <tbody id="versions-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div style="height:60px;"></div>
+
+<script>
+// ============================================================
+// SHARED DATA
+// ============================================================
+const COMMITS = [
+  [{id:1,name:"Alice",age:30,city:"New York"},{id:2,name:"Bob",age:25,city:"Los Angeles"},{id:3,name:"Charlie",age:35,city:"Austin"}],
+  [{id:1,name:"Alice",age:31,city:"New York"},{id:2,name:"Bob",age:25,city:"Los Angeles"},{id:3,name:"Charlie",age:35,city:"Austin"},{id:4,name:"Diana",age:28,city:"Chicago"}],
+  [{id:1,name:"Alice",age:31,city:"New York"},{id:2,name:"Bob",age:26,city:"Los Angeles"},{id:3,name:"Charlie",age:35,city:"Austin"},{id:4,name:"Diana",age:29,city:"Chicago"},{id:5,name:"Eve",age:27,city:"Seattle"}],
+  [{id:1,name:"Alice",age:31,city:"Boston"},{id:2,name:"Bob",age:26,city:"Los Angeles"},{id:3,name:"Charlie",age:35,city:"Austin"},{id:4,name:"Diana",age:29,city:"Chicago"},{id:5,name:"Eve",age:27,city:"Seattle"},{id:6,name:"Frank",age:32,city:"Denver"}],
+  [{id:1,name:"Alice",age:32,city:"Boston"},{id:2,name:"Bob",age:27,city:"Los Angeles"},{id:3,name:"Charlie",age:36,city:"Austin"},{id:4,name:"Diana",age:29,city:"Chicago"},{id:5,name:"Eve",age:27,city:"Seattle"},{id:6,name:"Frank",age:32,city:"Denver"}],
+];
+
+const COMMIT_HASHES = [
+  "a1b2c3d4e5f6",
+  "b2c3d4e5f6a1",
+  "c3d4e5f6a1b2",
+  "d4e5f6a1b2c3",
+  "e5f6a1b2c3d4",
+];
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const SPEED_LABELS = {1:'Slow', 2:'Normal', 3:'Fast'};
+const SPEED_MS = {1: 1600, 2: 800, 3: 350};
+const SPEED_LABELS5 = {1:'Very Fast', 2:'Fast', 3:'Normal', 4:'Slow', 5:'Very Slow'};
+const BLOB_DURATIONS = {1:400, 2:600, 3:900, 4:1300, 5:1800};
+const BLOB_COLORS = [
+  '#58a6ff','#3fb950','#d29922','#bc8cff','#f85149',
+  '#79c0ff','#56d364','#e3b341','#d2a8ff','#ffa198',
+  '#1f6feb','#238636','#9e6a03','#8957e5','#da3633',
+  '#388bfd','#2ea043',
+];
+
+function fakeHash(str) {
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 2654435761);
+    h2 = Math.imul(h2 ^ c, 1597334677);
+  }
+  h1 = Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);
+  h2 = Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
+  let r='', s=(4294967296*(2097151&h2)+(h1>>>0));
+  for(let i=0;i<8;i++){s=(s*1664525+1013904223)>>>0;r+=s.toString(16).padStart(8,'0');}
+  return r;
+}
+function computePKHash(pkCol, item) { return fakeHash(pkCol+':'+String(item[pkCol])+';'); }
+function computeContentHash(item) {
+  return fakeHash(Object.keys(item).sort().map(k=>k+':'+String(item[k])+';').join(''));
+}
+
+// ============================================================
+// SECTION 1: PIPELINE
+// ============================================================
+(function() {
+  const STAGES = [
+    {emoji:'⌨️', label:'Parse CLI\ncli.rs', desc:'Parsing args: db path, file, primary keys'},
+    {emoji:'📄', label:'Detect Format\nmain.rs', desc:'JSON or CSV extension?'},
+    {emoji:'📁', label:'Open Repo\ngit.rs', desc:'gix::discover() — native Git object store'},
+    {emoji:'🗄️', label:'Open DB\ndb.rs', desc:'SQLite connect or create'},
+    {emoji:'🔖', label:'Check Resume\ndb.rs', desc:'Read last_processed_commit from _scribe_meta'},
+    {emoji:'🔍', label:'Walk History\ngit.rs', desc:'BFS traversal of commit DAG'},
+    {emoji:'⚡', label:'Parse + Hash\nprocessor.rs', desc:'rayon::par_iter() — all cores'},
+    {emoji:'💾', label:'Write DB\ndb.rs', desc:'Atomic transaction per commit'},
+  ];
+
+  const container = document.getElementById('pipeline-stages');
+  const statusEl = document.getElementById('pipeline-status');
+  const speedSlider = document.getElementById('p1-speed');
+  const speedLabel = document.getElementById('p1-speed-label');
+  const playBtn = document.getElementById('p1-play');
+  const resetBtn = document.getElementById('p1-reset');
+
+  // Build DOM
+  STAGES.forEach((s, i) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'stage-wrapper';
+    const stage = document.createElement('div');
+    stage.className = 'stage';
+    stage.id = `stage-${i}`;
+    const lines = s.label.split('\n');
+    stage.innerHTML = `<div class="emoji">${s.emoji}</div><div class="stage-label">${lines[0]}<br><span style="color:var(--muted);font-size:0.62rem">${lines[1]}</span></div>`;
+    wrapper.appendChild(stage);
+    if (i < STAGES.length - 1) {
+      const arrow = document.createElement('div');
+      arrow.className = 'arrow';
+      arrow.id = `arrow-${i}`;
+      wrapper.appendChild(arrow);
+    }
+    container.appendChild(wrapper);
+  });
+
+  speedSlider.addEventListener('input', () => {
+    speedLabel.textContent = SPEED_LABELS[speedSlider.value];
+  });
+
+  let abort = false;
+  let running = false;
+
+  function resetPipeline() {
+    STAGES.forEach((_, i) => {
+      const el = document.getElementById(`stage-${i}`);
+      if (el) { el.className = 'stage'; }
+      if (i < STAGES.length - 1) {
+        const a = document.getElementById(`arrow-${i}`);
+        if (a) a.classList.remove('lit');
+      }
+    });
+    statusEl.textContent = 'Click ▶ Play to watch data flow through the pipeline.';
+    statusEl.style.color = 'var(--muted)';
+  }
+
+  async function runPipeline() {
+    abort = false;
+    running = true;
+    playBtn.disabled = true;
+    const delay = SPEED_MS[speedSlider.value];
+    resetPipeline();
+    for (let i = 0; i < STAGES.length; i++) {
+      if (abort) break;
+      const el = document.getElementById(`stage-${i}`);
+      el.className = 'stage active';
+      statusEl.textContent = `[${i+1}/${STAGES.length}] ${STAGES[i].desc}`;
+      statusEl.style.color = 'var(--blue)';
+      await sleep(delay);
+      if (abort) break;
+      el.className = 'stage done';
+      if (i < STAGES.length - 1) {
+        const a = document.getElementById(`arrow-${i}`);
+        if (a) a.classList.add('lit');
+      }
+    }
+    if (!abort) {
+      statusEl.textContent = '✓ Pipeline complete — SQLite database written.';
+      statusEl.style.color = 'var(--green)';
+    }
+    running = false;
+    playBtn.disabled = false;
+  }
+
+  playBtn.addEventListener('click', async () => {
+    if (running) { abort = true; await sleep(50); }
+    runPipeline();
+  });
+  resetBtn.addEventListener('click', async () => {
+    abort = true;
+    await sleep(50);
+    running = false;
+    playBtn.disabled = false;
+    resetPipeline();
+  });
+})();
+
+// ============================================================
+// SECTION 2: INCREMENTAL
+// ============================================================
+(function() {
+  const totalSlider = document.getElementById('i-total');
+  const resumeSlider = document.getElementById('i-resume');
+  const speedSlider = document.getElementById('i-speed');
+  const totalLabel = document.getElementById('i-total-label');
+  const resumeLabel = document.getElementById('i-resume-label');
+  const speedLabel = document.getElementById('i-speed-label');
+  const playBtn = document.getElementById('i-play');
+  const resetBtn = document.getElementById('i-reset');
+  const track = document.getElementById('commits-track');
+
+  let abort = false;
+  let running = false;
+  let processedCount = 0;
+
+  function getTotal() { return parseInt(totalSlider.value); }
+  function getResume() { return parseInt(resumeSlider.value); }
+  function getSpeed() { return parseInt(speedSlider.value); }
+
+  function updateResumeMax() {
+    const t = getTotal();
+    resumeSlider.max = t - 1;
+    if (getResume() >= t) resumeSlider.value = t - 1;
+  }
+
+  function updateLabels() {
+    totalLabel.textContent = getTotal();
+    const r = getResume();
+    resumeLabel.textContent = r === 0 ? '0 (fresh run)' : r;
+    speedLabel.textContent = SPEED_LABELS[getSpeed()];
+  }
+
+  function buildTrack(processedThisRun) {
+    const total = getTotal();
+    const resume = getResume();
+    track.innerHTML = '';
+    for (let i = 0; i < total; i++) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'commit-wrapper';
+      if (i > 0) {
+        const line = document.createElement('div');
+        line.className = 'commit-line';
+        wrapper.appendChild(line);
+      }
+      const circle = document.createElement('div');
+      circle.id = `commit-circle-${i}`;
+      const isSkipped = i < resume;
+      const isProcessed = i >= resume && i < resume + processedThisRun;
+      const isProcessing = i >= resume && i === resume + processedThisRun;
+      if (isSkipped) {
+        circle.className = 'commit-circle skipped';
+        circle.textContent = '✓';
+      } else if (isProcessed) {
+        circle.className = 'commit-circle processed';
+        circle.textContent = `C${i+1}`;
+      } else {
+        circle.className = 'commit-circle pending';
+        circle.textContent = `C${i+1}`;
+      }
+      if (i === resume && resume > 0) {
+        const marker = document.createElement('div');
+        marker.className = 'resume-marker';
+        marker.textContent = 'Resume here →';
+        circle.appendChild(marker);
+        const line2 = document.createElement('div');
+        line2.className = 'resume-line';
+        circle.appendChild(line2);
+      }
+      wrapper.appendChild(circle);
+      track.appendChild(wrapper);
+    }
+  }
+
+  function updateStats(processedThisRun) {
+    const total = getTotal();
+    const resume = getResume();
+    const toProcess = total - resume;
+    const timeSaved = Math.round((resume / total) * 100);
+    document.getElementById('i-stat-total').textContent = total;
+    document.getElementById('i-stat-skipped').textContent = resume;
+    document.getElementById('i-stat-toprocess').textContent = toProcess;
+    document.getElementById('i-stat-timesaved').textContent = timeSaved + '%';
+    document.getElementById('i-stat-done').textContent = processedThisRun;
+  }
+
+  function resetViz() {
+    processedCount = 0;
+    buildTrack(0);
+    updateStats(0);
+  }
+
+  totalSlider.addEventListener('input', () => { updateResumeMax(); updateLabels(); resetViz(); });
+  resumeSlider.addEventListener('input', () => { updateLabels(); resetViz(); });
+  speedSlider.addEventListener('input', () => { updateLabels(); });
+
+  playBtn.addEventListener('click', async () => {
+    if (running) { abort = true; await sleep(50); }
+    abort = false;
+    running = true;
+    playBtn.disabled = true;
+    processedCount = 0;
+    buildTrack(0);
+    updateStats(0);
+    const total = getTotal();
+    const resume = getResume();
+    const toProcess = total - resume;
+    const delay = SPEED_MS[getSpeed()];
+    for (let i = 0; i < toProcess; i++) {
+      if (abort) break;
+      const idx = resume + i;
+      const circle = document.getElementById(`commit-circle-${idx}`);
+      if (circle) {
+        circle.className = 'commit-circle processing';
+        circle.textContent = `C${idx+1}`;
+      }
+      await sleep(delay);
+      if (abort) break;
+      if (circle) {
+        circle.className = 'commit-circle processed';
+      }
+      processedCount++;
+      updateStats(processedCount);
+    }
+    running = false;
+    playBtn.disabled = false;
+  });
+
+  resetBtn.addEventListener('click', async () => {
+    abort = true;
+    await sleep(50);
+    running = false;
+    playBtn.disabled = false;
+    resetViz();
+  });
+
+  updateResumeMax();
+  updateLabels();
+  resetViz();
+})();
+
+// ============================================================
+// SECTION 3: PARALLEL
+// ============================================================
+(function() {
+  const blobsSlider = document.getElementById('par-blobs');
+  const workersSlider = document.getElementById('par-workers');
+  const speedSlider = document.getElementById('par-speed');
+  const blobsLabel = document.getElementById('par-blobs-label');
+  const workersLabel = document.getElementById('par-workers-label');
+  const speedLabel = document.getElementById('par-speed-label');
+  const runBtn = document.getElementById('par-run');
+  const resetBtn = document.getElementById('par-reset');
+  const lanesEl = document.getElementById('worker-lanes');
+
+  let abort = false;
+  let running = false;
+
+  function getBlobs() { return parseInt(blobsSlider.value); }
+  function getWorkers() { return parseInt(workersSlider.value); }
+  function getSpeed() { return parseInt(speedSlider.value); }
+
+  function updateLabels() {
+    blobsLabel.textContent = getBlobs();
+    const w = getWorkers();
+    workersLabel.textContent = w === 1 ? '1 (sequential)' : `${w} workers`;
+    speedLabel.textContent = SPEED_LABELS5[getSpeed()];
+  }
+
+  function buildLanes() {
+    const w = getWorkers();
+    lanesEl.innerHTML = '';
+    for (let i = 0; i < w; i++) {
+      const lane = document.createElement('div');
+      lane.className = 'worker-lane';
+      lane.id = `lane-${i}`;
+      const lbl = document.createElement('div');
+      lbl.className = 'worker-label';
+      lbl.textContent = `Worker ${i+1}`;
+      const blobs = document.createElement('div');
+      blobs.className = 'lane-blobs';
+      blobs.id = `lane-blobs-${i}`;
+      lane.appendChild(lbl);
+      lane.appendChild(blobs);
+      lanesEl.appendChild(lane);
+    }
+  }
+
+  function resetViz() {
+    buildLanes();
+    document.getElementById('par-stat-wall').textContent = '—';
+    document.getElementById('par-stat-speedup').textContent = '—';
+    document.getElementById('par-stat-parsed').textContent = '0';
+  }
+
+  blobsSlider.addEventListener('input', () => { updateLabels(); resetViz(); });
+  workersSlider.addEventListener('input', () => { updateLabels(); resetViz(); });
+  speedSlider.addEventListener('input', () => { updateLabels(); });
+
+  async function animateBlob(blobEl, duration) {
+    const prog = blobEl.querySelector('.blob-progress');
+    const steps = 30;
+    const stepTime = duration / steps;
+    for (let s = 0; s <= steps; s++) {
+      if (abort) return;
+      prog.style.width = (s / steps * 100) + '%';
+      await sleep(stepTime);
+    }
+    blobEl.classList.add('done');
+  }
+
+  runBtn.addEventListener('click', async () => {
+    if (running) { abort = true; await sleep(50); }
+    abort = false;
+    running = true;
+    runBtn.disabled = true;
+    const blobCount = getBlobs();
+    const workerCount = getWorkers();
+    const blobDuration = BLOB_DURATIONS[getSpeed()];
+    buildLanes();
+    document.getElementById('par-stat-parsed').textContent = '0';
+    document.getElementById('par-stat-wall').textContent = '—';
+    document.getElementById('par-stat-speedup').textContent = '—';
+
+    // Assign blobs to workers (round-robin)
+    const workerBlobs = Array.from({length: workerCount}, () => []);
+    for (let b = 0; b < blobCount; b++) {
+      workerBlobs[b % workerCount].push(b);
+    }
+
+    // Create blob elements
+    workerBlobs.forEach((blobs, wi) => {
+      const laneEl = document.getElementById(`lane-blobs-${wi}`);
+      blobs.forEach(b => {
+        const blobEl = document.createElement('div');
+        blobEl.className = 'blob';
+        blobEl.id = `blob-${b}`;
+        const color = BLOB_COLORS[b % BLOB_COLORS.length];
+        blobEl.style.background = color;
+        blobEl.innerHTML = `<div class="blob-progress" style="background:rgba(0,0,0,0.3)"></div><span class="blob-label">C${b+1}</span>`;
+        laneEl.appendChild(blobEl);
+      });
+    });
+
+    const wallStart = performance.now();
+
+    if (workerCount === 1) {
+      // Sequential
+      for (let b = 0; b < blobCount; b++) {
+        if (abort) break;
+        const blobEl = document.getElementById(`blob-${b}`);
+        await animateBlob(blobEl, blobDuration);
+        if (!abort) {
+          document.getElementById('par-stat-parsed').textContent = b + 1;
+        }
+      }
+    } else {
+      // Parallel — all workers animate simultaneously
+      let parsed = 0;
+      const workerPromises = workerBlobs.map(async (blobs, wi) => {
+        for (const b of blobs) {
+          if (abort) return;
+          const blobEl = document.getElementById(`blob-${b}`);
+          await animateBlob(blobEl, blobDuration);
+          parsed++;
+          if (!abort) document.getElementById('par-stat-parsed').textContent = parsed;
+        }
+      });
+      await Promise.all(workerPromises);
+    }
+
+    if (!abort) {
+      const wallMs = performance.now() - wallStart;
+      const wallSec = (wallMs / 1000).toFixed(2);
+      const seqTime = blobCount * blobDuration;
+      const speedup = (seqTime / wallMs).toFixed(2);
+      document.getElementById('par-stat-wall').textContent = wallSec + 's';
+      document.getElementById('par-stat-speedup').textContent = speedup + 'x';
+    }
+
+    running = false;
+    runBtn.disabled = false;
+  });
+
+  resetBtn.addEventListener('click', async () => {
+    abort = true;
+    await sleep(50);
+    running = false;
+    runBtn.disabled = false;
+    resetViz();
+  });
+
+  updateLabels();
+  buildLanes();
+})();
+
+// ============================================================
+// SECTION 4: HASHING
+// ============================================================
+(function() {
+  const commitSlider = document.getElementById('h-commit');
+  const pkSelect = document.getElementById('h-pk');
+  const commitLabel = document.getElementById('h-commit-label');
+  const animateBtn = document.getElementById('h-animate');
+  const tbody = document.getElementById('hash-tbody');
+
+  const COMMIT_NAMES = ['Commit 1 (initial)', 'Commit 2', 'Commit 3', 'Commit 4', 'Commit 5'];
+
+  let animAbort = false;
+  let animRunning = false;
+
+  function getCommitIdx() { return parseInt(commitSlider.value) - 1; }
+  function getPK() { return pkSelect.value; }
+
+  function getRowStatus(item, prevCommit, pkCol) {
+    if (!prevCommit) return 'new';
+    const prevItem = prevCommit.find(p => p[pkCol] === item[pkCol]);
+    if (!prevItem) return 'new';
+    const prevHash = computeContentHash(prevItem);
+    const curHash = computeContentHash(item);
+    return prevHash === curHash ? 'same' : 'changed';
+  }
+
+  function renderTable(commitIdx) {
+    const pk = getPK();
+    const rows = COMMITS[commitIdx];
+    const prev = commitIdx > 0 ? COMMITS[commitIdx - 1] : null;
+    tbody.innerHTML = '';
+    rows.forEach((item, ri) => {
+      const pkHash = computePKHash(pk, item);
+      const contentHash = computeContentHash(item);
+      const status = getRowStatus(item, prev, pk);
+      const tr = document.createElement('tr');
+      tr.className = status === 'new' ? 'row-new' : status === 'changed' ? 'row-changed' : 'row-same';
+      let badgeHtml = '';
+      if (status === 'new') badgeHtml = '<span class="status-badge badge-new">✦ New</span>';
+      else if (status === 'changed') badgeHtml = '<span class="status-badge badge-changed">⟳ Changed</span>';
+      else badgeHtml = '<span class="status-badge badge-same">— Same</span>';
+      tr.innerHTML = `
+        <td>${item.id}</td>
+        <td>${item.name}</td>
+        <td>${item.age}</td>
+        <td>${item.city}</td>
+        <td class="hash-pk">${pkHash.slice(0,12)}…</td>
+        <td class="hash-content">${contentHash.slice(0,12)}…</td>
+        <td>${badgeHtml}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    updateExplain(commitIdx);
+  }
+
+  function updateExplain(commitIdx) {
+    const pk = getPK();
+    const firstRow = COMMITS[commitIdx][0];
+    const pkInput = `${pk}:${String(firstRow[pk])};`;
+    const contentInput = Object.keys(firstRow).sort().map(k => `${k}:${String(firstRow[k])};`).join('');
+    document.getElementById('hash-explain-pk').innerHTML = `PK hash input: <code>${pkInput}</code>`;
+    document.getElementById('hash-explain-content').innerHTML = `Content hash input: <code>${contentInput}</code>`;
+  }
+
+  commitSlider.addEventListener('input', () => {
+    const idx = getCommitIdx();
+    commitLabel.textContent = COMMIT_NAMES[idx];
+    renderTable(idx);
+  });
+  pkSelect.addEventListener('change', () => { renderTable(getCommitIdx()); });
+
+  animateBtn.addEventListener('click', async () => {
+    if (animRunning) { animAbort = true; await sleep(50); }
+    animAbort = false;
+    animRunning = true;
+    animateBtn.disabled = true;
+    for (let i = 1; i <= 5; i++) {
+      if (animAbort) break;
+      commitSlider.value = i;
+      commitLabel.textContent = COMMIT_NAMES[i - 1];
+      renderTable(i - 1);
+      await sleep(1200);
+    }
+    animRunning = false;
+    animateBtn.disabled = false;
+  });
+
+  commitLabel.textContent = COMMIT_NAMES[0];
+  renderTable(0);
+})();
+
+// ============================================================
+// SECTION 5: DATABASE
+// ============================================================
+(function() {
+  const commitSlider = document.getElementById('db-commit');
+  const speedSlider = document.getElementById('db-speed');
+  const commitLabel = document.getElementById('db-commit-label');
+  const speedLabel = document.getElementById('db-speed-label');
+  const playBtn = document.getElementById('db-play');
+  const resetBtn = document.getElementById('db-reset');
+
+  let abort = false;
+  let running = false;
+
+  // State
+  let itemsMap = {}; // id -> {pk, lastCommit, name, age, city}
+  let versions = []; // [{vid, pk, commit, name, age, city}]
+  let versionId = 0;
+  let currentCommit = 0;
+
+  function getSpeed() { return parseInt(speedSlider.value); }
+
+  const COMMIT_LABELS = [
+    'Start (0 commits)',
+    'After commit C1', 'After commit C2', 'After commit C3',
+    'After commit C4', 'After commit C5'
+  ];
+
+  speedSlider.addEventListener('input', () => {
+    speedLabel.textContent = SPEED_LABELS[getSpeed()];
+  });
+
+  commitSlider.addEventListener('input', async () => {
+    const target = parseInt(commitSlider.value);
+    commitLabel.textContent = COMMIT_LABELS[target];
+    // Rebuild state up to target without animations
+    rebuildState(target);
+    renderAll(false);
+  });
+
+  function itemPK(id) { return fakeHash('id:' + id + ';'); }
+  function commitHash(idx) { return COMMIT_HASHES[idx]; }
+
+  function rebuildState(targetCommit) {
+    itemsMap = {};
+    versions = [];
+    versionId = 0;
+    currentCommit = targetCommit;
+    for (let ci = 0; ci < targetCommit; ci++) {
+      const rows = COMMITS[ci];
+      const prev = ci > 0 ? COMMITS[ci - 1] : null;
+      rows.forEach(item => {
+        const pk = itemPK(item.id);
+        const ch = commitHash(ci);
+        const prevItem = prev ? prev.find(p => p.id === item.id) : null;
+        const isNew = !prevItem;
+        const isChanged = prevItem && computeContentHash(item) !== computeContentHash(prevItem);
+        if (isNew || isChanged) {
+          itemsMap[item.id] = {pk, lastCommit: ch, name: item.name, age: item.age, city: item.city};
+          versionId++;
+          versions.push({vid: versionId, pk, commit: ch, name: item.name, age: item.age, city: item.city});
+        } else if (!prevItem) {
+          // first time
+          itemsMap[item.id] = {pk, lastCommit: ch, name: item.name, age: item.age, city: item.city};
+        }
+      });
+    }
+  }
+
+  function renderAll(animate) {
+    renderStats();
+    renderItemsTable(animate ? currentCommit - 1 : -1);
+    renderVersionsTable(animate);
+  }
+
+  function renderStats() {
+    document.getElementById('db-stat-commits').textContent = currentCommit;
+    document.getElementById('db-stat-items').textContent = Object.keys(itemsMap).length;
+    document.getElementById('db-stat-versions').textContent = versions.length;
+    if (currentCommit > 0) {
+      document.getElementById('db-stat-lpc').textContent = commitHash(currentCommit - 1).slice(0, 8) + '…';
+    } else {
+      document.getElementById('db-stat-lpc').textContent = '—';
+    }
+  }
+
+  function renderItemsTable(changedCommitIdx) {
+    const tbody = document.getElementById('items-tbody');
+    tbody.innerHTML = '';
+    const prev = changedCommitIdx >= 0 && changedCommitIdx < COMMITS.length ? COMMITS[changedCommitIdx] : null;
+    // Sort by id
+    const ids = Object.keys(itemsMap).map(Number).sort((a,b)=>a-b);
+    ids.forEach(id => {
+      const row = itemsMap[id];
+      const tr = document.createElement('tr');
+      const prevItem = prev ? prev.find(p => p.id === id) : null;
+      const curCommitItems = currentCommit > 0 ? COMMITS[currentCommit - 1] : null;
+      const curItem = curCommitItems ? curCommitItems.find(p => p.id === id) : null;
+      if (changedCommitIdx >= 0 && curItem) {
+        const isNew = !prevItem;
+        const isChanged = prevItem && computeContentHash(curItem) !== computeContentHash(prevItem);
+        if (isNew) tr.className = 'anim-new-item row-new';
+        else if (isChanged) tr.className = 'anim-changed-item row-changed';
+      }
+      tr.innerHTML = `
+        <td class="hash-pk" style="font-family:var(--mono);font-size:0.76rem">${row.pk.slice(0,8)}…</td>
+        <td style="color:var(--blue);font-family:var(--mono);font-size:0.76rem">${row.lastCommit.slice(0,8)}…</td>
+        <td>${row.name}</td>
+        <td>${row.age}</td>
+        <td>${row.city}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderVersionsTable(animate) {
+    const tbody = document.getElementById('versions-tbody');
+    tbody.innerHTML = '';
+    versions.forEach((v, i) => {
+      const tr = document.createElement('tr');
+      if (animate && i >= versions.length - (currentCommit > 0 ? COMMITS[currentCommit-1].length : 0)) {
+        tr.className = 'anim-version-row';
+      }
+      tr.innerHTML = `
+        <td style="color:var(--muted)">${v.vid}</td>
+        <td class="hash-pk" style="font-family:var(--mono);font-size:0.76rem">${v.pk.slice(0,8)}…</td>
+        <td style="color:var(--blue);font-family:var(--mono);font-size:0.76rem">${v.commit.slice(0,8)}…</td>
+        <td>${v.name}</td>
+        <td>${v.age}</td>
+        <td>${v.city}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    // Scroll to bottom
+    const wrap = document.querySelector('.db-table-wrap.scrollable');
+    if (wrap) wrap.scrollTop = wrap.scrollHeight;
+  }
+
+  async function playThrough() {
+    abort = false;
+    running = true;
+    playBtn.disabled = true;
+    // Reset to 0
+    itemsMap = {}; versions = []; versionId = 0; currentCommit = 0;
+    commitSlider.value = 0;
+    commitLabel.textContent = COMMIT_LABELS[0];
+    renderAll(false);
+    const delay = SPEED_MS[getSpeed()];
+    for (let ci = 0; ci < 5; ci++) {
+      if (abort) break;
+      await sleep(delay);
+      if (abort) break;
+      // Process commit ci
+      const rows = COMMITS[ci];
+      const prev = ci > 0 ? COMMITS[ci - 1] : null;
+      rows.forEach(item => {
+        const pk = itemPK(item.id);
+        const ch = commitHash(ci);
+        const prevItem = prev ? prev.find(p => p.id === item.id) : null;
+        const isNew = !prevItem;
+        const isChanged = prevItem && computeContentHash(item) !== computeContentHash(prevItem);
+        if (isNew || isChanged) {
+          itemsMap[item.id] = {pk, lastCommit: ch, name: item.name, age: item.age, city: item.city};
+          versionId++;
+          versions.push({vid: versionId, pk, commit: ch, name: item.name, age: item.age, city: item.city});
+        }
+      });
+      currentCommit = ci + 1;
+      commitSlider.value = currentCommit;
+      commitLabel.textContent = COMMIT_LABELS[currentCommit];
+      renderStats();
+      renderItemsTable(ci);
+      renderVersionsTable(true);
+    }
+    running = false;
+    playBtn.disabled = false;
+  }
+
+  playBtn.addEventListener('click', async () => {
+    if (running) { abort = true; await sleep(50); }
+    playThrough();
+  });
+
+  resetBtn.addEventListener('click', async () => {
+    abort = true;
+    await sleep(50);
+    running = false;
+    playBtn.disabled = false;
+    itemsMap = {}; versions = []; versionId = 0; currentCommit = 0;
+    commitSlider.value = 0;
+    commitLabel.textContent = COMMIT_LABELS[0];
+    speedLabel.textContent = SPEED_LABELS[getSpeed()];
+    renderAll(false);
+  });
+
+  speedLabel.textContent = SPEED_LABELS[getSpeed()];
+  renderAll(false);
+})();
+</script>
+</body>
+</html>
